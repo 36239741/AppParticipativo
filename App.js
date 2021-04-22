@@ -1,21 +1,29 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import Routes from './src/routes'
+import SplashScreen  from './src/pages/SplashScreen'
+
 
 export default function App() {
+
+  const [splashScreen, setSplashScreen] = useState(true);
+
+
+  function loading() {
+    setTimeout(function() {
+      setSplashScreen(false)
+    }, 3000)
+
+    if(splashScreen) {
+      return <SplashScreen/>
+    } else {
+      return <Routes/>
+    }
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+
+    loading()
+    
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
