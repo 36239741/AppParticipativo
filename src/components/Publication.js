@@ -1,19 +1,85 @@
-import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput, Image } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import { StyleSheet, View, Text, TouchableOpacity , Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons'; 
 import { Entypo } from '@expo/vector-icons'; 
 import MoreLessText from '../components/MoreLessText'
+import { FontAwesome5 } from '@expo/vector-icons'; 
+import { Feather } from '@expo/vector-icons'; 
+import { participativoImagePublication, participativoAvatarFile } from '../Api/Api'
+import { getToken } from '../Service/auth'
 
-export default function Publication({publication}) {
+global.Buffer = global.Buffer || require('buffer').Buffer
+
+export default function Publication({publication, navigation}) {
+
+    const [publicationImage, setPublicationImage] = useState(null);
+    const [userImage, setUserImage] = useState(null);
+
+
+    useEffect(() => {
+        orderStatus();
+        loadingPublicationPhoto();
+        loadingUserPhoto();
+    }, [])
+
+    const colorPublicationType = {
+        Elogio: 'green',
+        Reclamação: 'red',
+        Sugestão: 'orange'
+    }
+
+    const colorPublicationStatus = {
+        CONCLUÍDO: '#4C7A34',
+        EXECUÇÃO: '#EFCA16',
+        ENCAMINHADO: '#EFCA16',
+        ANALISE: '#ECA303',
+        PROTOCOLADO: '#F36000',
+        RECEBIDO: '#CA251F',
+    }
+
+    const [publicationStatus, setPublicationStatus] = useState(null);
+
+    function orderStatus() {
+        publication.statuses.length > 1 && publication.statuses.sort(function(a, b) {
+          var timeA = a.createdAt.split(' ')[1]
+          var timeB = b.createdAt.split(' ')[1]
+          var dateA = a.createdAt.split(' ')[0];
+          var dateB = b.createdAt.split(' ')[0];
+          var dateASplited = dateA.split('/')
+          var dateBSplited = dateB.split('/')
+          var dateTranformedA = new Date(dateASplited[1] + '/' + dateASplited[0] + '/' + dateASplited[2] +' '+timeA);
+          var dateTranformedB = new Date(dateBSplited[1] + '/' + dateBSplited[0] + '/' + dateBSplited[2] +' '+timeB);
+          return dateTranformedA - dateTranformedB;
+        });
+
+    }
 
     function publicationType() {
         return(
 
-            <View style={styles.publicationType}>
-                <Text style={styles.publicationTypeText}>Reclamação</Text>
+            <View style={{...styles.publicationType, backgroundColor: colorPublicationType[publication.categoria.nome]}}>
+                <Text style={styles.publicationTypeText}>{publication.categoria.nome}</Text>
             </View>
 
         )
+    }
+
+    async function loadingPublicationPhoto() {
+
+        let token = await getToken();
+
+        return publication.image && participativoImagePublication.get('' + publication.image, {headers: {Authorization: token} , responseType: 'arraybuffer'}).then(result => {
+            setPublicationImage(Buffer.from(result.data, 'binary').toString('base64'));
+        })
+    }
+
+    async function loadingUserPhoto() {
+
+        let token = await getToken();
+
+        return publication.usuario.avatar && participativoAvatarFile.get('' + publication.usuario.avatar, {headers: {Authorization: token} , responseType: 'arraybuffer'}).then(result => {
+            setUserImage(Buffer.from(result.data, 'binary').toString('base64'));
+        })
     }
 
     return (
@@ -21,13 +87,15 @@ export default function Publication({publication}) {
             <View style={styles.header}>
                 <View style={styles.photoAndpublicationInformationContainer}>
                     <View style={styles.photoFrame}>
-                        <View style={styles.photo}  />
+
+                        { userImage !== null ? (<Image source={{uri: `data:image/jpeg;base64,${userImage}` }} style={styles.photo}  />) : <FontAwesome5 name="user-alt" size={35} color='black' /> }
+                    
                     </View>
                     <View style={styles.publicationInformationContainer}>
-                        <Text style={styles.publicationUserName}>Henrique  Nitatori</Text>
+                        <Text style={styles.publicationUserName}>{publication.usuario.nome + ' ' + publication.usuario.sobrenome}</Text>
                         <View style={styles.publicationDate}>
                             <MaterialIcons name="date-range" size={14} color="black" />
-                            <Text style={styles.publicationDateText}>Publicado em 16 de março de 2020 ás 14h04</Text>
+                            <Text style={styles.publicationDateText}>Publicado em {publication.createdAt}</Text>
                         </View>
                     </View>
                 </View>
@@ -37,29 +105,46 @@ export default function Publication({publication}) {
                 <View style={styles.publicationTypeContainer}>
                     {publicationType()}
                 </View>
-                <View style={styles.publicationImage}></View>
+                <Image source={{uri: `data:image/jpeg;base64,${publicationImage}` }} style={styles.publicationImage}></Image>
 
                 <View style={styles.publicationAddressContainer}>
                     <View style={styles.publicationAddress}>
-                        <Text style={styles.publicationAddressText}>Avenida Araucária 1234 - Vila A Próximo ao IFPR</Text>
+                        <Text style={styles.publicationAddressText}>{ publication.endereco.complemento ? `${publication.endereco.logradouro} ${publication.endereco.numero} - ${publication.endereco.complemento}` : `${publication.endereco.logradouro} ${publication.endereco.numero}`}</Text>
                     </View>
                 </View>
             </View>
             <View style={styles.commentTextContainer}>
                 <MoreLessText numberOfLines={5}>
-                    Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
+                    {publication.descricao}
                 </MoreLessText>
             </View>
             <View style={styles.publicationCommentsAndLikeContainer}>
-                <Text style={styles.commentAndLike}>1234 pessoas apoiam está publicação</Text>
-                <Text style={styles.commentAndLike}>1234 comentários</Text>
+                <Text style={styles.commentAndLike}>{publication.apoios.length} pessoas apoiam está publicação</Text>
+                <Text style={styles.commentAndLike}>{publication.comentarios.length} comentários</Text>
+            </View>
+            <View style={styles.actionsButtonContainer}>
+                <View style={styles.iconButtonContainer}>
+                    <FontAwesome5 name="smile" size={24} color="red" />
+                    <Text style={styles.iconButtonText}>Apoiar</Text>
+                </View>
+                <TouchableOpacity style={styles.iconButtonContainer} onPress={() => navigation.navigate('Comentários', { comments: publication.comentarios, publicationUuid: publication.uuid })}>
+                    <MaterialIcons name="message" size={24} color="#0371B6" />
+                    <Text style={styles.iconButtonText}>Comentar</Text>
+                </TouchableOpacity>
+                <View style={{...styles.publicationStatusContainer, backgroundColor: colorPublicationStatus[publication.statuses[0].tipo]}}>
+                    <Feather name="calendar" size={24} color="white" />
+                    <Text style={{color: 'white', fontSize: 10, marginLeft: 7}}>{publication.statuses[0].createdAt.split(' ')[0]}</Text>
+                    <Text style={{color: 'white', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 10,  marginLeft: 7 }}>{publication.statuses[0].tipo}</Text>
+                </View>
             </View>
         </View>
     )
 }
 const styles = StyleSheet.create({
     container: {
-        flexDirection: 'column'
+        flexDirection: 'column',
+        marginTop: 20,
+        marginBottom: 20
     },
     header: {
         flexDirection: 'row',
@@ -81,7 +166,6 @@ const styles = StyleSheet.create({
         height: 50,
         width: 50,
         borderRadius: 50 / 2,
-        backgroundColor: 'red'
     },
     publicationDate: {
         flexDirection: 'row',
@@ -107,7 +191,6 @@ const styles = StyleSheet.create({
         marginBottom: 40
     },
     publicationImage: {
-        backgroundColor: 'red',
         height: 350,
         marginTop: 20,
         borderRadius: 3
@@ -122,7 +205,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'green',
         padding: 15,
         borderRadius: 500
     },
@@ -166,5 +248,29 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
         color: '#0371B6'
-    }
+    },
+    actionsButtonContainer: {
+        flexDirection: 'row',
+        alignSelf: 'stretch',
+        justifyContent: 'space-around',
+        marginTop: 20
+    },
+    iconButtonContainer:{
+        padding: 5,
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    iconButtonText: {
+        fontWeight: 'bold',
+        marginLeft: 3
+    },
+    publicationStatusContainer: {
+        borderRadius: 500,
+        padding: 5,
+        flexDirection: 'row',
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 7
+    },
 })

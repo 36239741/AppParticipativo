@@ -1,19 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, Button } from 'react-native';
 import FormContainer from '../components/FormContainer'
 import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { participativoLogin } from '../Api/Api'
+import { onSignIn } from '../Service/auth'
 
 export default function Login({navigation}) {
+
+    const [serverError, setServerError] = useState('');
+
+
     var schema = yup.object().shape({
-        login: yup.string().required('Campo obrigatório'),
+        email: yup.string().required('Campo obrigatório'),
         senha: yup.string().required('Campo obrigatório'),
     });
 
     const { handleSubmit, control, formState: { errors } } = useForm({
         resolver: yupResolver(schema)
     });
+
+    const login = (data) => {
+        setServerError('')
+        participativoLogin.post('/login', data ).then(result => {
+            onSignIn(result.headers.authorization)
+            navigation.navigate('Index')
+        }).catch(error => {
+            setServerError(error.response.data.message)
+        })
+        
+    }
 
     return (
         <>
@@ -26,9 +43,9 @@ export default function Login({navigation}) {
                     </View>
                     <View style={styles.containerFields}>
                         <View style={styles.fieldContainer}>
-                            <Controller defaultValue='' name='login' control={control} render={({field: {onChange, value}}) => (
+                            <Controller defaultValue='' name='email' control={control} render={({field: {onChange, value}}) => (
                                 <TextInput placeholder='Login' style={styles.field} onChangeText={value => onChange(value)} value={value} keyboardType='email-address'/> )}/>
-                            {errors.login && <Text style={styles.errorMessage}>{errors.login.message}</Text>}
+                            {errors.email && <Text style={styles.errorMessage}>{errors.email.message}</Text>}
                         </View>            
                         <View style={styles.fieldContainer}>
                             <Controller defaultValue='' name='senha' control={control} render={({field: {onChange, value}}) => (
@@ -36,7 +53,8 @@ export default function Login({navigation}) {
                             {errors.senha && <Text style={styles.errorMessage}>{errors.senha.message}</Text>}
 
                         </View>                
-                            <Button title='ENTRAR' color='#0371B6' onPress={() => navigation.navigate('Index')}/>
+                            <Button title='ENTRAR' color='#0371B6' onPress={handleSubmit(login)}/>
+                            <Text style={styles.serverErrorMessage} >{serverError.length > 0 ? serverError : ''}</Text>
                     </View>
                     <View style={styles.containerOptions}>
                         <Text style={styles.forgotPassword} onPress={() => navigation.navigate('Esqueci a senha')}>Esqueceu sua senha?</Text>
@@ -115,4 +133,9 @@ const styles =  StyleSheet.create({
         flexDirection: 'column',
         marginBottom: 40,
     },
+    serverErrorMessage: {
+        fontSize: 14,
+        color: 'red',
+        marginTop: 20,
+    }
 })

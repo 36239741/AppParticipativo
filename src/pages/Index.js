@@ -1,11 +1,37 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import { StyleSheet, View, Text, ScrollView, TextInput } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons'; 
+import { participativoApi } from '../Api/Api'
+import { getToken } from '../Service/auth'
+import { useIsFocused } from '@react-navigation/native';
 
 import Publication from '../components/Publication'
 
 
-export default function Index() {
+export default function Index({navigation}) {
+
+    const isFocused = useIsFocused();
+
+    const [publications, setPublications] = useState(null);
+
+    useEffect(() => {
+        loadTimeLine({page: 0, linesPerPage: 10})
+    }, [isFocused])
+
+    async function loadTimeLine(filter) {
+
+        let params = {
+            'page': filter.page,
+            'linesPerPage': filter.linesPerPage,
+          }
+
+        const token = await getToken();
+
+        participativoApi.get('publicacoes/timeline', {params : params, headers: {Authorization: token}}).then(result => {
+            setPublications(result.data.content)
+        }).catch(error => console.log(error))
+    }
+
     return (
         <ScrollView style={styles.container}>
             <View>
@@ -15,7 +41,8 @@ export default function Index() {
                 </View>
             </View>
             <View style={styles.publicationContainer}>
-                <Publication />
+
+                {publications != null && publications.map(publication => <Publication publication={publication} navigation={navigation} key={publication.uuid} />)}
                 
             </View>
         </ScrollView>
@@ -48,6 +75,7 @@ const styles =  StyleSheet.create({
         top: 14
     },
     publicationContainer: {
-        marginTop: 20
+        marginTop: 20,
+        marginBottom: 20
     }
 })
