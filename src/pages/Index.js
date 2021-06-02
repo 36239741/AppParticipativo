@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator , TextInput, FlatList } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons'; 
 import { participativoApi } from '../Api/Api'
 import { getToken } from '../Service/auth'
@@ -12,40 +12,84 @@ export default function Index({navigation}) {
 
     const isFocused = useIsFocused();
 
-    const [publications, setPublications] = useState(null);
+    const [publications, setPublications] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [ page, setPage ] = useState(0);
+    const [searchText, setSearchText] = useState('');
 
     useEffect(() => {
-        loadTimeLine({page: 0, linesPerPage: 10})
+        loadTimeLine();
     }, [isFocused])
 
-    async function loadTimeLine(filter) {
+    async function loadTimeLine()  {
+
+        if (loading) return null;
+
+        setLoading(true);
 
         let params = {
-            'page': filter.page,
-            'linesPerPage': filter.linesPerPage,
+            'page': page,
+            'linesPerPage': 10,
           }
-
+        
+       if ( publications.length > 0) setPublications([]); setPage(0)
+        
         const token = await getToken();
 
-        participativoApi.get('publicacoes/timeline', {params : params, headers: {Authorization: token}}).then(result => {
-            setPublications(result.data.content)
-        }).catch(error => console.log(error))
+        const data = (await participativoApi.get('publicacoes/timeline', {params : params, headers: {Authorization: token}})).data
+
+        if( data.content.length === 0) {setLoading(false); return;}
+
+        setPublications(value => [ ...value, ...data.content] )
+
+        setPage((value) => value + 1);
+
+        setLoading(false);
+        
     }
 
+    function renderFooter () {
+        if (!loading) return null;
+    
+        return (
+          <View style={styles.loading}>
+            <ActivityIndicator />
+          </View>
+        );
+
+
+    }
+
+    function renderItem({ item }) {
+        return (
+
+            <Publication publication={item} navigation={navigation} /> 
+
+        )
+
+    }
+    
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             <View>
                 <View style={styles.searchFieldContainer}>
-                    <TextInput style={styles.searchField} />
-                    <FontAwesome style={styles.searchFieldIcon} name="search" size={24} color="black" />
+                    <TextInput style={styles.searchField} onChangeText={text => setSearchText(text)} value={searchText}/>
+                    <FontAwesome style={styles.searchFieldIcon} name="search" size={24} color="black" 
+                        onPress={() => searchText.length > 0 && navigation.navigate('Resultado da Busca', { searchText: searchText })}
+                    />
                 </View>
             </View>
-            <View style={styles.publicationContainer}>
 
-                {publications != null && publications.map(publication => <Publication publication={publication} navigation={navigation} key={publication.uuid} />)}
-                
-            </View>
-        </ScrollView>
+            <FlatList contentContainerStyle={styles.publicationContainer}
+                data={publications}
+                keyExtractor={item => item.uuid}
+                onEndReached={loadTimeLine}
+                onEndReachedThreshold={0.1}
+                ListFooterComponent={renderFooter}
+                renderItem={renderItem}>
+            </FlatList>
+
+        </View>
     )
 }
 
@@ -77,5 +121,9 @@ const styles =  StyleSheet.create({
     publicationContainer: {
         marginTop: 20,
         marginBottom: 20
-    }
+    },
+    loading: {
+        alignSelf: 'center',
+        marginVertical: 20,
+    },
 })

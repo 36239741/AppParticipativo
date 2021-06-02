@@ -14,6 +14,10 @@ import CreateUserSucess from './pages/CreateUserSucess';
 import TermsOfUse from './pages/TermsOfUse';
 import Index from './pages/Index'
 import Comment from './pages/Comment'
+import HistoryStatus from './components/HistoryStatus'
+import SearchResult from './pages/SearchResult'
+import ViewResult from './pages/ViewResult'
+
 
 
 
@@ -38,6 +42,18 @@ export default function Routes({ isLogged }) {
                     <RootStack.Screen 
                         name="Comentários"
                         component={Comment}
+                    />
+                    <RootStack.Screen 
+                        name="Histórico de Status"
+                        component={HistoryStatus}
+                    />
+                    <RootStack.Screen 
+                        name="Resultado da Busca"
+                        component={SearchResult}
+                    />
+                    <RootStack.Screen 
+                        name="Publicação"
+                        component={ViewResult}
                     />
             </RootStack.Navigator>
         )

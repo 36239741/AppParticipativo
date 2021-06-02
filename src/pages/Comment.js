@@ -20,28 +20,37 @@ export default function Comment ({route, navigation}) {
     },[])
 
     async function orderStatus() {
-        
         comments.length > 1 && comments.sort(function(a, b) {
 
             var timeA = a.createdAt.split(' ')[1]
             var timeB = b.createdAt.split(' ')[1]
-
             var dateA = a.createdAt.split(' ')[0];
             var dateB = b.createdAt.split(' ')[0];
-
             var dateASplited = dateA.split('/')
             var dateBSplited = dateB.split('/')
-
             var dateTranformedA = new Date(dateASplited[1] + '/' + dateASplited[0] + '/' + dateASplited[2] +' '+timeA);
             var dateTranformedB = new Date(dateBSplited[1] + '/' + dateBSplited[0] + '/' + dateBSplited[2] +' '+timeB);
-
-            return dateTranformedA - dateTranformedB;
-
+            return dateTranformedA > dateTranformedB;
+            
           });
 
-          await findUserLogged();
+        await findUserLogged();
 
     }
+
+    function toISOFormat(dateTimeString) {
+        // Primeiro, dividimos a data completa em duas partes:
+        const [date, time] = dateTimeString.split(' ');
+      
+        // Dividimos a data em dia, mês e ano:
+        const [DD, MM, YYYY] = date.split('/');
+      
+        // Dividimos o tempo em hora e minutos:
+        const [HH, mm] = time.split(':');
+      
+        // Retornamos a data formatada em um padrão compatível com ISO:
+        return `${YYYY}-${MM}-${DD}T${HH}:${mm}`;
+      }
 
     async function findUserLogged() {
 

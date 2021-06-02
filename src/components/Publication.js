@@ -5,8 +5,9 @@ import { Entypo } from '@expo/vector-icons';
 import MoreLessText from '../components/MoreLessText'
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { Feather } from '@expo/vector-icons'; 
-import { participativoImagePublication, participativoAvatarFile } from '../Api/Api'
+import { participativoImagePublication, participativoAvatarFile, participativoApi } from '../Api/Api'
 import { getToken } from '../Service/auth'
+import jwtDecode from 'jwt-decode'
 
 global.Buffer = global.Buffer || require('buffer').Buffer
 
@@ -14,9 +15,11 @@ export default function Publication({publication, navigation}) {
 
     const [publicationImage, setPublicationImage] = useState(null);
     const [userImage, setUserImage] = useState(null);
-
+    const [apoios, setApoios] = useState(publication.apoios);
+    const [userLogged, setUserLogged] = useState(null);
 
     useEffect(() => {
+        userLoggedDecode().then();
         orderStatus();
         loadingPublicationPhoto();
         loadingUserPhoto();
@@ -41,6 +44,7 @@ export default function Publication({publication, navigation}) {
 
     function orderStatus() {
         publication.statuses.length > 1 && publication.statuses.sort(function(a, b) {
+
           var timeA = a.createdAt.split(' ')[1]
           var timeB = b.createdAt.split(' ')[1]
           var dateA = a.createdAt.split(' ')[0];
@@ -49,8 +53,19 @@ export default function Publication({publication, navigation}) {
           var dateBSplited = dateB.split('/')
           var dateTranformedA = new Date(dateASplited[1] + '/' + dateASplited[0] + '/' + dateASplited[2] +' '+timeA);
           var dateTranformedB = new Date(dateBSplited[1] + '/' + dateBSplited[0] + '/' + dateBSplited[2] +' '+timeB);
-          return dateTranformedA - dateTranformedB;
+          return dateTranformedA > dateTranformedB;
+          
         });
+
+    }
+
+    async function userLoggedDecode() {
+
+        let token = await getToken();
+
+        const decode = jwtDecode(token);
+
+        setUserLogged(decode.sub);
 
     }
 
@@ -82,7 +97,77 @@ export default function Publication({publication, navigation}) {
         })
     }
 
+    async function likeOrNotLike() {
+
+        if(apoios.length === 0) { 
+
+            setApoios((apoio) => [...apoio, { usuario: { email: decode.sub } }]);
+
+            await sendLikeOrNotLike('apoiar');
+
+            return; 
+        }
+        
+        let publicacaoApoiada = apoios.filter(apoio => apoio.usuario.email === userLogged);
+
+        if(publicacaoApoiada.length === 0) { 
+
+            setApoios((apoio) => [...apoio, { usuario: { email: userLogged } }]);
+
+            await sendLikeOrNotLike('apoiar'); 
+
+            return; 
+
+        }
+
+        publicacaoApoiada = apoios.filter(apoio => apoio.usuario.email !== userLogged);
+
+        setApoios(publicacaoApoiada);
+
+        await sendLikeOrNotLike('desapoiar')
+
+    }
+
+    async function sendLikeOrNotLike(apoiarOuDesapoiar) {
+
+        const user = (await findUserLogged()).data;
+
+        let token = await getToken();
+
+        if( apoiarOuDesapoiar ===  'apoiar' ) {
+
+            await participativoApi.post('apoios/' + user.uuid + '/' + publication.uuid , {} ,{ headers: { Authorization: token } } )
+            return 
+        }
+
+        await participativoApi.delete('apoios/' + user.uuid + '/' + publication.uuid , { headers: { Authorization: token } } )
+        return 
+
+    }
+
+    async function findUserLogged() {
+
+        let token = await getToken();
+
+        const decode = jwtDecode(token);
+
+        return await participativoApi.get('usuarios/email', { headers: { Authorization: token }, params: { value: decode.sub }}, )
+
+    }
+
+    function isLiked() {
+
+        let publicacaoApoiada = apoios.filter(apoio => apoio.usuario.email === userLogged);
+
+        const text = publicacaoApoiada.length > 0 ? 'Apoiado' :  'Apoiar';
+
+        return (<Text style={styles.iconButtonText}>{text}</Text>);
+
+
+    }
+
     return (
+        
         <View style={styles.container}>
             <View style={styles.header}>
                 <View style={styles.photoAndpublicationInformationContainer}>
@@ -119,23 +204,23 @@ export default function Publication({publication, navigation}) {
                 </MoreLessText>
             </View>
             <View style={styles.publicationCommentsAndLikeContainer}>
-                <Text style={styles.commentAndLike}>{publication.apoios.length} pessoas apoiam está publicação</Text>
+                <Text style={styles.commentAndLike}>{apoios.length} pessoas apoiam está publicação</Text>
                 <Text style={styles.commentAndLike}>{publication.comentarios.length} comentários</Text>
             </View>
-            <View style={styles.actionsButtonContainer}>
-                <View style={styles.iconButtonContainer}>
+            <View style={styles.actionsButtonContainer}> 
+                <TouchableOpacity style={styles.iconButtonContainer} onPress={async () => await likeOrNotLike() }>
                     <FontAwesome5 name="smile" size={24} color="red" />
-                    <Text style={styles.iconButtonText}>Apoiar</Text>
-                </View>
+                    { isLiked() }
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.iconButtonContainer} onPress={() => navigation.navigate('Comentários', { comments: publication.comentarios, publicationUuid: publication.uuid })}>
                     <MaterialIcons name="message" size={24} color="#0371B6" />
                     <Text style={styles.iconButtonText}>Comentar</Text>
                 </TouchableOpacity>
-                <View style={{...styles.publicationStatusContainer, backgroundColor: colorPublicationStatus[publication.statuses[0].tipo]}}>
+                <TouchableOpacity onPress={() => navigation.navigate('Histórico de Status', {status: publication.statuses })} style={{...styles.publicationStatusContainer, backgroundColor: colorPublicationStatus[publication.statuses[0].tipo]}}>
                     <Feather name="calendar" size={24} color="white" />
                     <Text style={{color: 'white', fontSize: 10, marginLeft: 7}}>{publication.statuses[0].createdAt.split(' ')[0]}</Text>
                     <Text style={{color: 'white', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 10,  marginLeft: 7 }}>{publication.statuses[0].tipo}</Text>
-                </View>
+                </TouchableOpacity>
             </View>
         </View>
     )
