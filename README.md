@@ -1,4 +1,4 @@
-<img src="https://img.shields.io/static/v1?label=Participativo&message=A Rede Social do Cidadão&color=0371B6&style=for-the-badge&logo=ghost"/>
+<img src="https://img.shields.io/static/v1?label=Participativo&message=A-Rede-Social-do-Cidadão&color=0371B6&style=for-the-badge&logo=ghost"/>
 
 <h1 align="center">Participativo - A Rede Social do Cidadão</h1>
 
