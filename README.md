@@ -34,7 +34,7 @@ de vida e da prestação de serviços públicos na sua cidade.
 ### Instalação
 
 Para a instalação do ambiente de desenvolvimento vá até a pasta raiz do projeto e execute o comando <b>yarn install</b> 
-para instalar as dependências do projeto.
+para instalar as dependências do projeto, quando acabar a instalação execute o comando <b>yarn start</b> para executar o servidor.
 
 ### 🛠 Tecnologias
 
