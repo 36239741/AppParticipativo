@@ -17,13 +17,16 @@ import Comment from './pages/Comment'
 import HistoryStatus from './components/HistoryStatus'
 import SearchResult from './pages/SearchResult'
 import ViewResult from './pages/ViewResult'
-
-
+import Map from './pages/Map'
+import CreatePublication from './pages/CreatePublication'
+import FillPublicationAddress from './pages/FillPublicationAddress'
+import CompletePublication from './pages/CompletePublication'
 
 
 
 const MainStack = createStackNavigator();
 const RootStack = createStackNavigator();
+const PublicationStack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
 
 
@@ -55,7 +58,31 @@ export default function Routes({ isLogged }) {
                         name="Publicação"
                         component={ViewResult}
                     />
+                    <RootStack.Screen 
+                        name="Localização"
+                        component={Map}
+                    />
             </RootStack.Navigator>
+        )
+    }
+
+    function publicationRoutes() {
+        return(
+            <PublicationStack.Navigator initialRouteName='Criar publicação'>
+                <PublicationStack.Screen 
+                        name="Criar publicação"
+                        component={CreatePublication}
+                        options={{ headerShown: false }}
+                />
+                 <PublicationStack.Screen 
+                        name="Informar um endereço"
+                        component={FillPublicationAddress}
+                    />
+                <PublicationStack.Screen 
+                     name="Concluir publicação"
+                    component={CompletePublication}
+                />
+            </PublicationStack.Navigator>
         )
     }
 
@@ -72,7 +99,7 @@ export default function Routes({ isLogged }) {
                         tabBarIcon: ({color}) => (
                             <Entypo name="home" size={26} color={color} />)
                         }}/>
-                    <Tab.Screen name="Criar publicação" component={Index} 
+                    <Tab.Screen name="Criar publicação" component={publicationRoutes} 
                     options={{
                         tabBarIcon: ({color}) => (
                             <Entypo name="squared-plus" size={26} color={color} />)

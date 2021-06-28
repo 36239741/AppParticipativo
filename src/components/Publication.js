@@ -22,7 +22,8 @@ export default function Publication({publication, navigation}) {
         userLoggedDecode().then();
         orderStatus();
         loadingPublicationPhoto();
-        loadingUserPhoto();
+        loadingUserPhoto(),
+        () => {setPublicationStatus(null)}
     }, [])
 
     const colorPublicationType = {
@@ -192,11 +193,11 @@ export default function Publication({publication, navigation}) {
                 </View>
                 <Image source={{uri: `data:image/jpeg;base64,${publicationImage}` }} style={styles.publicationImage}></Image>
 
-                <View style={styles.publicationAddressContainer}>
+                <TouchableOpacity style={styles.publicationAddressContainer} onPress={() => navigation.navigate('Localização', {endereco: publication.endereco})}>
                     <View style={styles.publicationAddress}>
                         <Text style={styles.publicationAddressText}>{ publication.endereco.complemento ? `${publication.endereco.logradouro} ${publication.endereco.numero} - ${publication.endereco.complemento}` : `${publication.endereco.logradouro} ${publication.endereco.numero}`}</Text>
                     </View>
-                </View>
+                </TouchableOpacity>
             </View>
             <View style={styles.commentTextContainer}>
                 <MoreLessText numberOfLines={5}>

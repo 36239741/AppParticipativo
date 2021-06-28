@@ -30,9 +30,9 @@ export default function Index({navigation}) {
         let params = {
             'page': page,
             'linesPerPage': 10,
+            'orderBy': 'createdAt',
+            'direction': 'DESC'
           }
-        
-       if ( publications.length > 0) setPublications([]); setPage(0)
         
         const token = await getToken();
 
