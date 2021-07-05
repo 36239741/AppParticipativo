@@ -13,14 +13,23 @@ import { participativoApi } from '../Api/Api'
 import { getToken } from '../Service/auth'
 import { Picker } from '@react-native-picker/picker';
 
+
 export default function FillPublicationAddress({route, navigation}) {
 
     const { publicacao } = route.params
 
     const [bairros, setBairros] =  useState([]);
 
+
     useEffect(() => {
-        getBairro()
+        getBairro() 
+        publicacao?.publication?.endereco?.cep.length > 0 && setValue('cep', String(publicacao?.publication?.endereco?.cep))
+        publicacao?.publication?.endereco?.bairro?.nome.length > 0 && setValue('bairro', String(publicacao?.publication?.endereco?.bairro?.nome))
+        publicacao?.publication?.endereco?.logradouro.length > 0 && setValue('logradouro', String(publicacao?.publication?.endereco?.logradouro))
+        publicacao?.publication?.endereco?.numero.length > 0 && setValue('numero', publicacao?.publication?.endereco?.numero)
+        publicacao?.publication?.endereco?.complemento.length > 0 && setValue('complemento', String(publicacao?.publication?.endereco?.complemento)) 
+
+        
     }, [])
 
     let endereco = {
@@ -76,8 +85,6 @@ export default function FillPublicationAddress({route, navigation}) {
 
         const cep = getValues('cep');
 
-        console.log(cep)
-
         if(!cep) return;
 
         const searchedCep = await axios.get('https://viacep.com.br/ws/'+cep+'/json/');
@@ -108,7 +115,6 @@ export default function FillPublicationAddress({route, navigation}) {
     const onSubmit = (data) => {
         data.bairro = getBairroId();
         publicacao.endereco = data
-        console.log(data)
         navigation.navigate('Concluir publicação', { publication: publicacao  })
     };
 
@@ -158,7 +164,7 @@ export default function FillPublicationAddress({route, navigation}) {
                 </View>
 
                 <View style={styles.fieldContainer}>
-                        <Controller defaultValue={endereco.logradouror} name='logradouro' control={control} render={({ field:{ onChange, value } }) => (
+                        <Controller defaultValue={endereco.logradouro} name='logradouro' control={control} render={({ field:{ onChange, value } }) => (
                             <TextInput 
                             value={value}
                             onChangeText={value => onChange(value)}

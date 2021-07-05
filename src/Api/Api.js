@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { getToken } from '../Service/auth'
 
-const TIME_OUT = 10000;
+const TIME_OUT = 900000;
 
 export const participativoApi = axios.create({
     baseURL: 'https://participativo.com.br/api/',

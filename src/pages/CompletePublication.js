@@ -1,15 +1,17 @@
 import React, {useState, useEffect} from 'react';
-import { StyleSheet, View, TouchableOpacity, Text, Image, ScrollView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Image, ScrollView, ActivityIndicator } from 'react-native';
 import MoreLessText from '../components/MoreLessText'
 import { Ionicons } from '@expo/vector-icons'; 
 import { participativoApi } from '../Api/Api'
 import { getToken } from '../Service/auth'
 import jwtDecode from 'jwt-decode'
-import Base64 from 'Base64';
 
 export default function CompletePublication({route, navigation}) {
 
     const { publication } = route.params
+
+    const [loading, setLoading] = useState(false)
+    const [buttonDisabled, setButtonDisabled ] = useState(false)
 
     const colorPublicationType = {
         Elogio: 'green',
@@ -19,10 +21,19 @@ export default function CompletePublication({route, navigation}) {
 
 
     async function createPublication() {
-
+        setLoading(true)
+        setButtonDisabled(true);
         let token = await getToken();
         
         const decode = jwtDecode(token);
+
+        if(publication?.isEdit) {
+            await editPublication(token);
+            setLoading(false)
+            setButtonDisabled(false);
+
+            return
+        }
 
         const usuario =  await participativoApi.get('usuarios/email', { headers: { Authorization: token }, params: { value: decode.sub }}, )
 
@@ -35,38 +46,65 @@ export default function CompletePublication({route, navigation}) {
             logradouro: publication.endereco.logradouro,
             numero: publication.endereco.numero,
             usuarioUuid: usuario.data.uuid };
-        const createdPublicacao = await participativoApi.post('publicacoes', publicacao ,  { headers: { Authorization: token }});
+
         
-        let formData = new FormData();
-
-        const base64Data = publication.foto;
+           const createdPublicacao = await participativoApi.post('publicacoes', publicacao ,  { headers: { Authorization: token }});
+        if(publication.foto) {
+            
+           await sendImage(createdPublicacao, token);
+        } 
         
-        const url = 'data:image/png;'+base64Data+'';
-        fetch(url)
-          .then(res => res.blob())
-          .then( async  blob => {
-            const file = new File([blob], "File name",{ type: "image/png" })
-            formData.append('file', file)
-            formData.append('publicacao', createdPublicacao.data.uuid)
-    
-            await participativoApi.post('upload/image', formData, { headers: { Authorization: token }})
-    
-            navigation.navigate('Home');
-          })
+        setLoading(false)
+        setButtonDisabled(false);
 
-
-
-
-
+        navigation.navigate('Criar publicação', {added : true});
 
     }
 
-    
-    function b64toBlob(dataURI) {
-    
-        var byteString = Base64.atob(dataURI);
+    async function editPublication(token) {
 
-        return new Blob([byteString], { type: 'image/png' });
+        let publicacao = { 
+
+            bairroId: String(publication.endereco.bairro), 
+            cep: publication.endereco.cep,
+            complemento: publication?.endereco?.complemento,
+            descricao: publication.descricao,
+            logradouro: publication.endereco.logradouro,
+            numero: publication.endereco.numero };
+        await participativoApi.put('publicacoes/' + publication.publication.uuid, publicacao ,  { headers: { Authorization: token }});
+
+        if( !publication.base64 ) {
+
+            await sendImage({ data: publication.publication.uuid }, token)
+
+        }
+
+        navigation.navigate('Home', {added : true});
+
+    }
+
+    async function sendImage(createdPublicacao, token) {
+
+        let formData = new FormData();
+
+        var photo = {
+            uri: publication.foto,
+            type: 'image/jpg',
+            name: 'photo.jpg',
+        }
+
+        formData.append('file', photo)
+        
+        formData.append('publicacao', createdPublicacao.data)
+
+        const headers = {
+            'Accept': 'application/json',
+            'Authorization': token,
+            'Content-Type': 'multipart/form-data',
+        }
+
+        await participativoApi.post('upload/image', formData, { headers: headers})
+
     }
 
     function publicationType() {
@@ -87,7 +125,7 @@ export default function CompletePublication({route, navigation}) {
                 <View style={styles.publicationTypeContainer}>
                     {publicationType()}
                 </View>
-                <Image source={{uri: `data:image/jpeg;base64,${publication?.foto}` }} style={styles.publicationImage}></Image>
+                <Image source={ publication.base64 === false ? {uri: publication?.foto } : { uri: `data:image/jpeg;base64,${publication?.foto}` }} style={styles.publicationImage}></Image> 
 
                 <TouchableOpacity style={styles.publicationAddressContainer} >
                     <View style={styles.publicationAddress}>
@@ -102,13 +140,19 @@ export default function CompletePublication({route, navigation}) {
 
             <View style={{ marginTop: 30, marginBottom: 40 }}>
 
-                <TouchableOpacity style={styles.button} onPress={() => createPublication()}>
+                <TouchableOpacity style={styles.button} onPress={() => createPublication()} disabled={buttonDisabled}>
                     <Ionicons name="reload" size={24} color="white" />
-                    <Text style={{ color: 'white', fontWeight: 'bold', marginLeft: 5 }}>PUBLICAR</Text>
+                    <Text style={{ color: 'white', fontWeight: 'bold', marginLeft: 5 }}>{publication.isEdit ? 'EDITAR' : 'PUBLICAR'}</Text>
                 </TouchableOpacity>
 
             </View>
             </View>
+            {loading && (
+                <View style={[styles.container, styles.horizontal]}>
+                    <ActivityIndicator size="large" />
+                </View>
+            )}
+
         </ScrollView>
 
 
@@ -118,8 +162,7 @@ export default function CompletePublication({route, navigation}) {
 const styles = StyleSheet.create({
     container: {
         padding: 8,
-        display: 'flex',
-        alignItems: 'center'
+        position: 'absolute',
 
     },
     button: {
@@ -182,4 +225,9 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 12
     },
+    container: {
+        flex: 1,
+        alignItems: 'center', 
+        justifyContent: 'center',
+      },
 })

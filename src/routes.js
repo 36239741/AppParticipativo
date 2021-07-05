@@ -1,6 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useState } from 'react'
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react'
 import { createStackNavigator } from '@react-navigation/stack';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import { Entypo } from '@expo/vector-icons'; 
@@ -21,7 +20,10 @@ import Map from './pages/Map'
 import CreatePublication from './pages/CreatePublication'
 import FillPublicationAddress from './pages/FillPublicationAddress'
 import CompletePublication from './pages/CompletePublication'
-
+import UpdatePublication from './pages/UpdatePublication'
+import Profile from './pages/Profile'
+import Notification from './pages/Notification'
+import { isSignedIn } from './Service/auth'
 
 
 const MainStack = createStackNavigator();
@@ -30,9 +32,14 @@ const PublicationStack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
 
 
-export default function Routes({ isLogged }) {
+export default function Routes({ navigation , isLogged }) {
 
     const [logged, setLogged] = useState(isLogged);
+
+    function logout() {
+        setLogged(false)
+        return index();
+    }
 
     function homeRoutes() {
         return(
@@ -68,11 +75,22 @@ export default function Routes({ isLogged }) {
 
     function publicationRoutes() {
         return(
-            <PublicationStack.Navigator initialRouteName='Criar publicação'>
+            <PublicationStack.Navigator initialRouteName='Criar publicação' >
                 <PublicationStack.Screen 
                         name="Criar publicação"
                         component={CreatePublication}
                         options={{ headerShown: false }}
+                />
+                <PublicationStack.Screen 
+                        name="Editar publicação"
+                        component={UpdatePublication}
+                        options={{ headerShown: false }}
+                        listeners={({ navigation, route }) => ({
+                            tabPress: e => {
+                            e.preventDefault();
+                            navigation.navigate('Criar publicação', { screen: 'Criar publicação', params : { publication: publication } });
+                          },
+                        })}
                 />
                  <PublicationStack.Screen 
                         name="Informar um endereço"
@@ -87,44 +105,53 @@ export default function Routes({ isLogged }) {
     }
 
     function home() {
+            return(
+                    <Tab.Navigator 
+                        initialRouteName="Home"
+                        activeColor="#f0edf6"
+                        barStyle={{ backgroundColor: '#0371B6' }}>
+                        <Tab.Screen name="Home" component={homeRoutes} 
+                        options={{
+                            tabBarIcon: ({color}) => (
+                                <Entypo name="home" size={26} color={color} />),
+                                tabBarVisible: false
+                            }}/>
+                        <Tab.Screen name="Criar publicação" component={publicationRoutes} 
+                        options={{
+                            tabBarIcon: ({color}) => (
+                                <Entypo name="squared-plus" size={26} color={color} />)
+                            }}
+                            listeners={({ navigation, route }) => ({
+                                tabPress: e => {
+                                e.preventDefault();
+                                navigation.navigate('Criar publicação', { screen: 'Criar publicação' });
+                              },
+                            })}
+                            />
+                        <Tab.Screen name="Notificações" component={Notification} 
+                        options={{
+                            tabBarIcon: ({color}) => (
+                                <Ionicons name="notifications-circle" size={24} color={color} />)
+                            }}/>
+                        <Tab.Screen name="Perfil" component={Profile} 
 
-        return(
-            <NavigationContainer>
-                <Tab.Navigator 
-                    initialRouteName="Home"
-                    activeColor="#f0edf6"
-                    barStyle={{ backgroundColor: '#0371B6' }}>
-                    <Tab.Screen name="Home" component={homeRoutes} 
-                    options={{
-                        tabBarIcon: ({color}) => (
-                            <Entypo name="home" size={26} color={color} />)
-                        }}/>
-                    <Tab.Screen name="Criar publicação" component={publicationRoutes} 
-                    options={{
-                        tabBarIcon: ({color}) => (
-                            <Entypo name="squared-plus" size={26} color={color} />)
-                        }}/>
-                    <Tab.Screen name="Notificações" component={Index} 
-                    options={{
-                        tabBarIcon: ({color}) => (
-                            <Ionicons name="notifications-circle" size={24} color={color} />)
-                        }}/>
-                    <Tab.Screen name="Perfil" component={Index} 
-                    options={{
-                        tabBarIcon: ({color}) => (
-                            <FontAwesome5 name="user-alt" size={24} color={color} />)
-                        }}/>                     
-                </Tab.Navigator>
-            </NavigationContainer>
-        )
+                        options={{
+                            tabBarIcon: ({color}) => (
+                                <FontAwesome5 name="user-alt" size={24} color={color} />)
+                            
+                            }}/> 
+                                                
+                    </Tab.Navigator>
+            )
 
+        
+    
     }
 
 
-    function index() {
+    function index({logged}) {
         return(
-            <NavigationContainer>
-                <MainStack.Navigator>
+                <MainStack.Navigator initialRouteName={logged ? 'Index' : 'Login'}>
                     <MainStack.Screen 
                         name="Login"
                         component={Login}
@@ -153,11 +180,11 @@ export default function Routes({ isLogged }) {
                         options={{headerShown: false}}
                     />
                 </MainStack.Navigator>
-        </NavigationContainer>)
+        )
     }
 
     return (
-        <>{ logged ? home() : index() }</>
+        <>{ index({logged:logged}) }</>
     )
 
 }

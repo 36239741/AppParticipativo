@@ -5,9 +5,11 @@ import { FontAwesome } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons'; 
 
 
-export default function LoadingPhoto({setPhoto}) {
+export default function LoadingPhoto({ setPhoto, photo, base64 }) {
 
-    const [image, setImage] = useState(null)
+    const [image, setImage] = useState(photo)
+    const [isBase64, setIsBase64] = useState(base64);
+
 
     async function openImagePickerAsync() {
         let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -22,7 +24,6 @@ export default function LoadingPhoto({setPhoto}) {
             aspect: [4, 3],
             quality: 1,
             mediaTypes: "Images",
-            base64: true
         });
 
         if (pickerResult.cancelled === true) {
@@ -30,7 +31,7 @@ export default function LoadingPhoto({setPhoto}) {
         }
         setPhoto(pickerResult);
         setImage({ uri: pickerResult.uri }) 
-
+        setIsBase64(false);
     }
 
     function previewImage() {
@@ -42,14 +43,14 @@ export default function LoadingPhoto({setPhoto}) {
                 </>
             )
         } else {
-            return <Image style={styles.photo} source={{uri: image.uri}} />
+            return !isBase64 ? <Image style={styles.photo} source={{uri: image.uri}} /> : <Image style={styles.photo} source={{ uri: `data:image/jpeg;base64,${photo}`}} />
 
         }
 
     }
 
     function imageIsNull() {
-        return image === null ? true : false;
+        return image === null && photo === null ? true : false;
     }
 
 

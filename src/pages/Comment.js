@@ -1,16 +1,16 @@
 import React, {useState, useEffect} from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput, Image, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TextInput, Image, Dimensions, FlatList } from 'react-native';
 import { Feather } from '@expo/vector-icons'; 
 import { getToken } from '../Service/auth'
 import { participativoAvatarFile, participativoApi } from '../Api/Api'
 import jwtDecode from 'jwt-decode'
 import { FontAwesome5 } from '@expo/vector-icons'; 
-
+import Menu from '../components/MenuComponent'
 
 
 export default function Comment ({route, navigation}) {
 
-    const { comments, userImage, publicationUuid } = route.params;
+    const { comments, userImage, publicationUuid, user } = route.params;
     const [commentAndImages, setCommentAndImages] = useState([]);
     const [commentText, setCommentText] = useState('');
     const [userPhoto, setUserPhoto] = useState(null);
@@ -112,6 +112,25 @@ export default function Comment ({route, navigation}) {
         return Buffer.from(response.data, 'binary').toString('base64'); 
     }
 
+    async function deleteComment(uuid) {
+
+        let removedComment = commentAndImages
+
+        const removedComments = removedComment.filter(comment => comment.comment.uuid !== uuid  )
+
+        setCommentAndImages(removedComments)
+
+        let token = await getToken();
+
+        await participativoApi.delete('comentarios/' + uuid, {headers: {Authorization: token}} );
+
+    }
+
+    const Item = ({ item, index }) => (
+        <Menu commentIndex={index} comment={item} user={user} deleteComment={deleteComment} key={index} />
+
+      );
+
     return(
         <>
             <View style={styles.container}>
@@ -121,17 +140,16 @@ export default function Comment ({route, navigation}) {
                     <Feather name="arrow-right" size={24} color="black" style={styles.inputIcon} onPress={() => comment()}/>
                 </View>
             </View>
-            <ScrollView>
-                {commentAndImages.map((comment, index) => (
-                    <View style={styles.commentContainer} key={index}>
-                        { typeof comment.photo !== 'undefined' ? (<Image source={{uri: `data:image/jpeg;base64,${comment.photo}` }} style={styles.photo}  />) : <FontAwesome5 name="user-alt" size={34} color='black' /> }
-                        <View style={styles.textContainer}>
-                            <Text style={{marginLeft: 10, fontSize: 11}}>{comment.comment.corpo}</Text>
-                            <Text style={{marginLeft: 10, fontSize: 10, fontWeight: 'bold'}}>Em {comment.comment.createdAt.split(' ')[0]} ás {comment.comment.createdAt.split(' ')[1].split(':')[0]}:{comment.comment.createdAt.split(' ')[1].split(':')[1]}</Text>
-                        </View>
-                    </View>
-                ))}
-            </ScrollView>
+            <View>
+
+                <FlatList
+                    data={commentAndImages}
+                    extraData={commentAndImages}
+                    keyExtractor={item => item.comment.uuid}
+                    renderItem={Item}>
+
+                </FlatList>
+            </View>
 
         </>
     )
@@ -144,6 +162,14 @@ const styles =  StyleSheet.create({
         justifyContent: 'flex-start',
         alignItems: 'flex-end',
         marginTop: 40
+    },
+    wrapper :{
+        marginTop: 10,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'stretch'
     },
     photo: {
         height: 40,
@@ -171,8 +197,8 @@ const styles =  StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-start',
         alignItems: 'center',
-        paddingLeft: 40,
         paddingRight: 40,
+        marginLeft: 40,
         marginTop: 10,
         marginBottom: 10
     }

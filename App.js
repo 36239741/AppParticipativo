@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Routes from './src/routes'
 import SplashScreen  from './src/pages/SplashScreen'
 import { isSignedIn, onSignOut } from './src/Service/auth'
+import { Provider } from 'react-native-paper';
+import { NavigationContainer } from '@react-navigation/native';
 
 
 export default function App() {
@@ -34,9 +36,11 @@ export default function App() {
   }
 
   return (
-
-    loading()
-    
+    <Provider>
+    <NavigationContainer >
+    {loading()}
+    </NavigationContainer>
+    </Provider>
   );
 }
 

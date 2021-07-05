@@ -3,6 +3,7 @@ import { StyleSheet, View, Image, Text, ScrollView, TouchableOpacity } from 'rea
 import { MaterialIcons } from '@expo/vector-icons'; 
 import { participativoImagePublication, participativoAvatarFile, participativoApi } from '../Api/Api'
 import { getToken } from '../Service/auth'
+import { FontAwesome5 } from '@expo/vector-icons'; 
 
 const colorPublicationType = {
     Elogio: 'green',
@@ -74,9 +75,9 @@ export default function SearchResult({route, navigation}) {
         <ScrollView style={styles.container}>
                 {publications.map(publication => (
                     <TouchableOpacity key={publication.uuid} onPress={() => navigation.navigate('Publicação', { publication: publication })}>
-                        <View style={styles.publicationTypeContainer}>
-                            <View style={styles.publicationType}>
-                                    <Text style={styles.publicationTypeText}>Reclamação</Text>
+                        <View style={{...styles.publicationTypeContainer, backgroundColor: colorPublicationType[publication.categoria.nome]}}>
+                            <View style={{...styles.publicationType, backgroundColor: colorPublicationType[publication.categoria.nome]}}>
+                                    <Text style={{...styles.publicationTypeText}}>{publication.categoria.nome}</Text>
                             </View>
                         </View>
                         <View style={styles.cardContent}>
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
         zIndex: 5,
-        marginTop: 10
+        marginTop: 40
     },
     publicationType: {
         position: 'absolute',
@@ -190,9 +191,9 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     photoFrame: {
-        height: 60,
-        width: 60,
-        borderRadius: 60 / 2,
+        height: 50,
+        width: 50,
+        borderRadius: 50 / 2,
         borderWidth: 1,
         borderColor: '#0371B6',
         padding: 3,

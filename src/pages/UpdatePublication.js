@@ -2,7 +2,6 @@ import React, {useState, useEffect} from 'react';
 import { StyleSheet, View, Text, TextInput, Button, ScrollView, TouchableOpacity, Modal,Image, ActivityIndicator } from 'react-native';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Picker } from '@react-native-picker/picker';
 import { useForm, Controller } from 'react-hook-form';
 import { MaterialIcons } from '@expo/vector-icons'; 
 import FormContainer from '../components/FormContainer'
@@ -10,7 +9,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { participativoApi } from '../Api/Api'
 import { getToken } from '../Service/auth'
 import * as FileSystem from 'expo-file-system';
-import { useFocusEffect  } from '@react-navigation/native';
 
 
 export default function CreatePublication ({ navigation, route }) {
@@ -20,24 +18,23 @@ export default function CreatePublication ({ navigation, route }) {
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState([]);
 
-    const { added } = route.params || false;
+    const { publication  } = route.params || {};
 
     useEffect(() => {
         getCategory()
-    }, [])
 
-    useFocusEffect(() => {
-        if(added) {
-            setValue('categoria', '');
-            setValue('descricao', '');
-            setPublicationPhoto(null);
-        }
-    });
+            setPublicationPhoto({ uri:publication.image, base64: true })
+            setValue('categoria', publication.categoria.id )
+            setValue('foto', publication.image )
+            setValue('descricao', publication.descricao )
+
+    }, [])
 
 
     var schema = yup.object().shape({
         categoria: yup.string().required('Campo obrigatório'),
         descricao: yup.string().required('Campo obrigatório').min(20, 'O tamanho minimo é 20 caracteres'),
+        foto: yup.string().required('Campo obrigatório'),
       });
 
     const { handleSubmit, control, formState: { errors }, setValue, getValues } = useForm({
@@ -48,8 +45,12 @@ export default function CreatePublication ({ navigation, route }) {
 
         data.categoria = getCategoryObject();
 
-        data.base64 = publicationPhoto ? publicationPhoto.base64 : '';
-        
+        data.publication = publication 
+
+        data.base64 = publicationPhoto.base64
+
+        data.isEdit = true
+
         navigation.navigate('Informar um endereço', { publicacao: data })
 
     };
@@ -137,24 +138,7 @@ export default function CreatePublication ({ navigation, route }) {
         setCategories(data)
 
     }
-    function picker() {
-            return (<View style={styles.fieldContainer}>
-                <Controller defaultValue='' name='categoria' control={control} render={({field: {onChange, value}}) => (
-                    <Picker
-                        style={{display: 'flex', alignSelf: 'stretch', height: 150}}
-                      selectedValue={value}
-                      onValueChange={(itemValue, itemIndex) =>
-                        onChange(itemValue)
-                      }>
-                        { categories.map(category => (
-                            <Picker.Item key={category.id} label={category.nome} value={category.id} />
-                        )) }
-                    </Picker> )}/>
-                {errors.categoria && <Text style={styles.errorMessage}>{errors.categoria.message}</Text>}
-                </View>
-            )
-        
-    }
+
 
     function modal() {
         return (
@@ -193,10 +177,8 @@ export default function CreatePublication ({ navigation, route }) {
         <FormContainer>
             <ScrollView style={styles.container}>
 
-            { picker() }
 
-
-            <View style={[styles.containerFields]}>
+            <View style={[styles.containerFields, styles.editMargin ]}>
                 <View style={styles.fieldContainer}>
                     <Controller defaultValue='' name='descricao' control={control} render={({ field:{ onChange, value } }) => (
                         <TextInput 
@@ -215,9 +197,8 @@ export default function CreatePublication ({ navigation, route }) {
                         <Text style={styles.photoText}>Tire uma foto ou escolha da galeria</Text>
                         <View style={styles.photoBorder}>
                             {publicationPhoto !== null ? 
-
                                 <Image source={ publicationPhoto.base64 === false ? {uri: publicationPhoto.uri } : { uri: `data:image/jpeg;base64,${publicationPhoto.uri}` }} style={styles.photoBackground}></Image> :
-
+                                 
                             <View style={styles.photoBackground}>
                                 <MaterialIcons style={styles.iconPhoto} name="photo-camera" size={40} color="#1077b8" />
                             </View>

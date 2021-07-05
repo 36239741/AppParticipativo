@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, memo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity , Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons'; 
 import { Entypo } from '@expo/vector-icons'; 
@@ -8,22 +8,30 @@ import { Feather } from '@expo/vector-icons';
 import { participativoImagePublication, participativoAvatarFile, participativoApi } from '../Api/Api'
 import { getToken } from '../Service/auth'
 import jwtDecode from 'jwt-decode'
+import { Menu } from 'react-native-paper';
+
 
 global.Buffer = global.Buffer || require('buffer').Buffer
 
-export default function Publication({publication, navigation}) {
+function Publication({publication, navigation, deletePublication}) {
 
     const [publicationImage, setPublicationImage] = useState(null);
     const [userImage, setUserImage] = useState(null);
     const [apoios, setApoios] = useState(publication.apoios);
     const [userLogged, setUserLogged] = useState(null);
+    const [menu, setMenu] = useState(false);
+
 
     useEffect(() => {
         userLoggedDecode().then();
         orderStatus();
         loadingPublicationPhoto();
         loadingUserPhoto(),
-        () => {setPublicationStatus(null)}
+        () => {
+            setPublicationStatus(null)
+            setPublicationImage(null)
+            setUserImage(null)
+        }
     }, [])
 
     const colorPublicationType = {
@@ -54,7 +62,7 @@ export default function Publication({publication, navigation}) {
           var dateBSplited = dateB.split('/')
           var dateTranformedA = new Date(dateASplited[1] + '/' + dateASplited[0] + '/' + dateASplited[2] +' '+timeA);
           var dateTranformedB = new Date(dateBSplited[1] + '/' + dateBSplited[0] + '/' + dateBSplited[2] +' '+timeB);
-          return dateTranformedA > dateTranformedB;
+          return dateTranformedA < dateTranformedB;
           
         });
 
@@ -102,7 +110,7 @@ export default function Publication({publication, navigation}) {
 
         if(apoios.length === 0) { 
 
-            setApoios((apoio) => [...apoio, { usuario: { email: decode.sub } }]);
+            setApoios((apoio) => [...apoio, { usuario: { email: userLogged } }]);
 
             await sendLikeOrNotLike('apoiar');
 
@@ -167,6 +175,36 @@ export default function Publication({publication, navigation}) {
 
     }
 
+    function editNavigate() {
+
+        setMenu(false)
+        publication.image = publicationImage
+        navigation.navigate('Criar publicação', { screen: 'Editar publicação', params : { publication: publication } })
+
+    }
+
+    function openModalDeletePublication() {
+        setMenu(false)
+        deletePublication(publication.uuid)
+    }
+
+    function showOptions () {
+        if(publication.usuario.email === userLogged) {
+            return (
+                <Menu
+                    visible={menu}
+                    onDismiss={() => setMenu(false)}
+                    anchor={
+                        <Entypo name="dots-three-vertical" size={20} color="black" onPress={() => setMenu(true)}/>
+                        }>
+                    <Menu.Item onPress={() => editNavigate() } title="Editar" />
+                    <Menu.Item onPress={() => { openModalDeletePublication() }} title="Excluir" />
+                </Menu>
+            )
+        }
+
+    }
+
     return (
         
         <View style={styles.container}>
@@ -185,7 +223,7 @@ export default function Publication({publication, navigation}) {
                         </View>
                     </View>
                 </View>
-                <Entypo name="dots-three-vertical" size={20} color="black" />
+                {showOptions()}
             </View>
             <View style={styles.publicationImageContainer}>
                 <View style={styles.publicationTypeContainer}>
@@ -213,7 +251,7 @@ export default function Publication({publication, navigation}) {
                     <FontAwesome5 name="smile" size={24} color="red" />
                     { isLiked() }
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButtonContainer} onPress={() => navigation.navigate('Comentários', { comments: publication.comentarios, publicationUuid: publication.uuid })}>
+                <TouchableOpacity style={styles.iconButtonContainer} onPress={() => navigation.navigate('Comentários', { comments: publication.comentarios, publicationUuid: publication.uuid, user: userLogged })}>
                     <MaterialIcons name="message" size={24} color="#0371B6" />
                     <Text style={styles.iconButtonText}>Comentar</Text>
                 </TouchableOpacity>
@@ -360,3 +398,5 @@ const styles = StyleSheet.create({
         marginLeft: 7
     },
 })
+
+export default memo(Publication)

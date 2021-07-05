@@ -3,12 +3,12 @@ import { StyleSheet, View, Text, ScrollView, TextInput } from 'react-native';
 import { AntDesign } from '@expo/vector-icons'; 
 
 const color = {
-    'CONCLUÍDO': '',
-    'ATENDIMENTO': '',
-    'ENCAMINHADO': '',
-    'ANÁLISE': '',
-    'PROTOCOLADO': '',
-    'RECEBIDO': ''
+    'CONCLUIDO': '#4C7A34',
+    'ATENDIMENTO': '#AFB915',
+    'ENCAMINHADO': '#FED612',
+    'ANALISE': '#FFAF00',
+    'PROTOCOLADO': '#F36000',
+    'RECEBIDO': '#CA251F'
 }
 
 export default function HistoryStatus({route, navigation}) {
@@ -16,7 +16,7 @@ export default function HistoryStatus({route, navigation}) {
     const { status } = route.params
 
     function recoveryColor(type) {
-
+        console.log(type)
         const recoveredColor = color[type];
         const colorEncontred = recoveredColor || recoveredColor.length > 0 ? recoveredColor : 'white';
         return colorEncontred;

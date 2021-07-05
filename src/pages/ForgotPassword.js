@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text , Button, TextInput  } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import FormContainer from '../components/FormContainer'
+import { participativoApi } from '../Api/Api'
+import { Snackbar } from 'react-native-paper';
 
 export default function ForgotPassword({navigation}) {
 
@@ -11,11 +13,20 @@ export default function ForgotPassword({navigation}) {
         email: yup.string().email('E-mail inválido').required('Campo obrigatório'),
       });
 
-    const { handleSubmit, control, formState: { errors } } = useForm({
+    const { handleSubmit, control, formState: { errors },setValue } = useForm({
         resolver: yupResolver(schema)
     });
 
-    const onSubmit = (data) => console.log(data);
+    const [snack, setSnackBar] = useState(false);
+
+
+    const onSubmit = async (data) => {
+
+        await participativoApi.post('auth/esquecisenha', data);
+        setValue('email', '')
+        setSnackBar(true);
+
+    };
 
 
     return(
@@ -34,7 +45,17 @@ export default function ForgotPassword({navigation}) {
                     <Button title='ENVIAR' onPress={handleSubmit(onSubmit)} color='#0371B6' /> 
                     <Text style={styles.createAccountText} onPress={() => navigation.navigate('Registrar')}>Quero criar uma conta</Text>
                 </View>      
-            </FormContainer>     
+            </FormContainer>
+            <Snackbar
+              visible={snack}
+              onDismiss={() => setSnackBar(false)}
+              action={{
+                color: 'black',
+                label: 'Fechar',
+                onPress: () => setSnackBar(false) }}
+              style={{backgroundColor: "#C3C3C3"}}>
+              <View><Text>Email de recuperação de senha enviado com sucesso!</Text></View>
+            </Snackbar>     
         </>
     )
 }

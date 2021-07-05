@@ -10,7 +10,8 @@ import CpfMask from '../Util/CpfMask';
 import PhoneMask from '../Util/PhoneMask';
 import cpfValidator from '../Util/CpfValidator'
 import FormContainer from '../components/FormContainer'
-
+import { participativoApi } from '../Api/Api'
+import DatePicker from '../components/DateTimePicker'
 
 const minumumAge = 13;
 export default function Register({navigation}) {
@@ -30,7 +31,7 @@ export default function Register({navigation}) {
         termos: yup.boolean().required('Não é possivel fazer o cadastro sem aceitar os temos').test('termValidate', 'Termo não aceito', value => value ),
       });
 
-    const { handleSubmit, control, formState: { errors } } = useForm({
+      const { handleSubmit, control, formState: { errors }, setError } = useForm({
         resolver: yupResolver(schema)
     });
 
@@ -46,8 +47,45 @@ export default function Register({navigation}) {
         return age < minumumAge ? false : true;
     }
 
-    const onSubmit = (data) => navigation.navigate('Sucesso', {screen: 'Sucesso ao criar usuário'});
+    const onSubmit = async (data) => {
 
+        const d = new Date(data.dataDeNascimento)
+
+        let usuario = {
+            cpf: data.cpf.replace(/[^a-zA-Z 0-9]/g, ''),
+            dataNascimento: dataAtualFormatada(d),
+            email: data.email,
+            nome: data.nome,
+            sobrenome: data.sobrenome,
+            senha: data.senha,
+            telefone: data.telefone.replace(/[^a-zA-Z 0-9]/g, '').replace(' ', '')
+        }
+ 
+        participativoApi.post('usuarios', usuario).then(response => {
+            navigation.navigate('Sucesso', {screen: 'Sucesso ao criar usuário'})
+        },error => {
+
+            const errors = error.response.data.errors;
+
+            if(!errors) return;
+
+            errors.forEach(error => {
+                setError(error.fieldName, {message: error.message})
+            })
+        })
+
+    };
+
+    function dataAtualFormatada(data){
+
+        var dia  = data.getDate().toString()
+        var diaF = (dia.length == 1) ? '0'+dia : dia
+        var mes  = (data.getMonth()+1).toString() //+1 pois no getMonth Janeiro começa com zero.
+        var mesF = (mes.length == 1) ? '0'+mes : mes
+        var anoF = data.getFullYear()
+    
+    return diaF+"/"+mesF+"/"+anoF;
+    }
 
     return (
         <>  
@@ -73,7 +111,7 @@ export default function Register({navigation}) {
                                 <View style={styles.fieldContainer}>
                                         <Text style={styles.datepickerLabel}>Data de Nascimento</Text>
                                         <Controller defaultValue={new Date()} name='dataDeNascimento' control={control} render={({field: {onChange, value}}) => (
-                                            <DateTimePicker style={styles.datePicker} display='default' dateFormat='shortdate' mode='date' placeholderText='Data de nascimento' value={ value } onChange={ (event, date) => onChange(date) } /> )}/>
+                                            <DatePicker date={ value } onChange={ onChange }/> )}/>
                                     {errors.dataDeNascimento && <Text style={styles.errorMessage}>{errors.dataDeNascimento.message}</Text>}
                                 </View>
                                         
@@ -121,7 +159,6 @@ export default function Register({navigation}) {
                                     {errors.termos && <Text style={styles.errorMessage}>{errors.termos.message}</Text>}
                                 </View>
                                         
-                                <LoadingPhoto setPhoto={setUserPhoto}/>
                                 <View style={styles.buttonContainer}>
                                     <Button title='ENVIAR' color='#0371B6' onPress={handleSubmit(onSubmit)}/>
                                 </View>
